@@ -1,17 +1,22 @@
 name: etl-cron-yf
+
 on:
   schedule:
     - cron: '20 10 * * *' # roda todo dia às 07:20 BRT
-  workflow_dispatch: {}   # pode rodar manualmente
+  workflow_dispatch: {}   # também pode rodar manualmente
+
 jobs:
   run-etl:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - run: pip install -r etl/requirements.txt
-      - env:
+
+      - run: python etl/load_prices_yf.py
+        env:
           PG_CONN: ${{ secrets.PG_CONN }}
-        run: python etl/load_prices_yf.py

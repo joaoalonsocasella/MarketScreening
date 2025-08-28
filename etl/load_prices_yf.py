@@ -2,6 +2,8 @@ import os, datetime as dt
 import yfinance as yf
 import psycopg
 
+print("DEBUG PG_CONN:", os.environ.get("PG_CONN"))
+
 PG_CONN = os.environ["PG_CONN"]
 TICKERS = os.environ.get("TICKERS", "VALE3.SA,PETR4.SA,ITUB4.SA,B3SA3.SA,WEGE3.SA").split(",")
 
