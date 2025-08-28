@@ -1,6 +1,6 @@
 import os
 import yfinance as yf
-import psycopg2  # use psycopg2-binary no Windows
+import psycopg # use psycopg2-binary no Windows
 
 print("DEBUG PG_CONN prefix:", os.environ.get("PG_CONN")[:60])
 
@@ -20,7 +20,7 @@ TICKERS = [
 ]
 
 rows_upserted = 0
-with psycopg2.connect(PG_CONN) as conn:
+with psycopg.connect(PG_CONN) as conn:
     with conn.cursor() as cur:
         for tk in TICKERS:
             print(f"Baixando histórico completo de {tk}")
