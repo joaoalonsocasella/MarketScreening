@@ -8,19 +8,17 @@ print("DEBUG PG_CONN prefix:", os.environ.get("PG_CONN")[:60])
 PG_CONN = os.environ["PG_CONN"]
 
 # lista fixa de tickers da B3 já com .SA
-# TICKERS = [
-#     "PETR4.SA",
-#     "VALE3.SA",
-#     "ITUB4.SA",
-#     "B3SA3.SA",
-#     "ABEV3.SA",
-#     "WEGE3.SA",
-#     "LREN3.SA",
-#     "SUZB3.SA",
-#     "BBAS3.SA",
-# ]
-
-TICKERS = ["AAPL", "MSFT", "GOOG"]
+TICKERS = [
+    "PETR4.SA",
+    "VALE3.SA",
+    "ITUB4.SA",
+    "B3SA3.SA",
+    "ABEV3.SA",
+    "WEGE3.SA",
+    "LREN3.SA",
+    "SUZB3.SA",
+    "BBAS3.SA",
+]
 
 
 end = dt.date.today()
