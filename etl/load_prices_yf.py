@@ -1,7 +1,7 @@
 import os
 import datetime as dt
 import yfinance as yf
-import psycopg
+import psycopg2  # use psycopg2-binary no Windows
 
 print("DEBUG PG_CONN prefix:", os.environ.get("PG_CONN")[:60])
 
@@ -20,16 +20,16 @@ TICKERS = [
     "BBAS3.SA",
 ]
 
-
 end = dt.date.today()
 start = end - dt.timedelta(days=120)
 
 rows_upserted = 0
-with psycopg.connect(PG_CONN, autocommit=False) as conn:
+with psycopg2.connect(PG_CONN) as conn:
     with conn.cursor() as cur:
         for tk in TICKERS:
             print(f"Baixando {tk} de {start} até {end}")
-            df = yf.download(tk, start=start, end=end, progress=False).reset_index()
+            ticker = yf.Ticker(tk)
+            df = ticker.history(start=start, end=end).reset_index()
             if df.empty:
                 print(f"Nenhum dado encontrado para {tk}, pulando...")
                 continue
@@ -40,9 +40,15 @@ with psycopg.connect(PG_CONN, autocommit=False) as conn:
                 "High": "high",
                 "Low": "low",
                 "Close": "close",
-                "Adj Close": "adj_close",
                 "Volume": "volume",
             })
+
+            # alguns ativos não têm 'Adj Close' no history -> tratar
+            if "Adj Close" in df.columns:
+                df = df.rename(columns={"Adj Close": "adj_close"})
+            else:
+                df["adj_close"] = df["close"]
+
             # ticker sem sufixo para salvar no banco
             df["ticker"] = tk.replace(".SA", "")
 
