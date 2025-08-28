@@ -1,5 +1,4 @@
 import os
-import datetime as dt
 import yfinance as yf
 import psycopg2  # use psycopg2-binary no Windows
 
@@ -20,16 +19,14 @@ TICKERS = [
     "BBAS3.SA",
 ]
 
-end = dt.date.today()
-start = end - dt.timedelta(days=120)
-
 rows_upserted = 0
 with psycopg2.connect(PG_CONN) as conn:
     with conn.cursor() as cur:
         for tk in TICKERS:
-            print(f"Baixando {tk} de {start} até {end}")
+            print(f"Baixando histórico completo de {tk}")
             ticker = yf.Ticker(tk)
-            df = ticker.history(start=start, end=end).reset_index()
+            df = ticker.history(period="max").reset_index()
+
             if df.empty:
                 print(f"Nenhum dado encontrado para {tk}, pulando...")
                 continue
@@ -43,7 +40,7 @@ with psycopg2.connect(PG_CONN) as conn:
                 "Volume": "volume",
             })
 
-            # alguns ativos não têm 'Adj Close' no history -> tratar
+            # alguns ativos podem não trazer 'Adj Close'
             if "Adj Close" in df.columns:
                 df = df.rename(columns={"Adj Close": "adj_close"})
             else:
