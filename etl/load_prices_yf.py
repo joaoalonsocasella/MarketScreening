@@ -7,23 +7,18 @@ print("DEBUG PG_CONN prefix:", os.environ.get("PG_CONN")[:60])
 
 PG_CONN = os.environ["PG_CONN"]
 
-# tickers sem sufixo
-RAW_TICKERS = os.environ.get("TICKERS", "VALE3,PETR4,ITUB4,B3SA3,WEGE3").split(",")
-
-def resolve_ticker(tk: str) -> str:
-    """Testa sufixos (.SAO e .SA) e devolve o primeiro que funcionar"""
-    for suffix in [".SAO", ".SA"]:
-        try:
-            df = yf.download(tk + suffix, period="5d", progress=False)
-            if not df.empty:
-                print(f"Ticker resolvido: {tk} -> {tk+suffix}")
-                return tk + suffix
-        except Exception as e:
-            print(f"Erro ao tentar {tk+suffix}: {e}")
-    print(f"Nenhum sufixo válido encontrado para {tk}, mantendo cru")
-    return tk
-
-TICKERS = [resolve_ticker(tk) for tk in RAW_TICKERS]
+# lista fixa de tickers da B3 já com .SA
+TICKERS = [
+    "PETR4.SA",
+    "VALE3.SA",
+    "ITUB4.SA",
+    "B3SA3.SA",
+    "ABEV3.SA",
+    "WEGE3.SA",
+    "LREN3.SA",
+    "SUZB3.SA",
+    "BBAS3.SA",
+]
 
 end = dt.date.today()
 start = end - dt.timedelta(days=120)
@@ -39,18 +34,20 @@ with psycopg.connect(PG_CONN, autocommit=False) as conn:
                 continue
 
             df = df.rename(columns={
-                'Date': 'trade_date',
-                'Open': 'open',
-                'High': 'high',
-                'Low': 'low',
-                'Close': 'close',
-                'Adj Close': 'adj_close',
-                'Volume': 'volume'
+                "Date": "trade_date",
+                "Open": "open",
+                "High": "high",
+                "Low": "low",
+                "Close": "close",
+                "Adj Close": "adj_close",
+                "Volume": "volume",
             })
-            df['ticker'] = tk.replace('.SAO', '').replace('.SA', '')
+            # ticker sem sufixo para salvar no banco
+            df["ticker"] = tk.replace(".SA", "")
 
             for r in df.itertuples(index=False):
-                cur.execute("""
+                cur.execute(
+                    """
                     insert into fact_quotes_daily
                     (trade_date,ticker,open,high,low,close,adj_close,volume)
                     values (%s,%s,%s,%s,%s,%s,%s,%s)
@@ -61,16 +58,18 @@ with psycopg.connect(PG_CONN, autocommit=False) as conn:
                       close=excluded.close,
                       adj_close=excluded.adj_close,
                       volume=excluded.volume
-                """, (
-                    r.trade_date.date(),
-                    r.ticker,
-                    r.open,
-                    r.high,
-                    r.low,
-                    r.close,
-                    r.adj_close,
-                    int(r.volume)
-                ))
+                """,
+                    (
+                        r.trade_date.date(),
+                        r.ticker,
+                        r.open,
+                        r.high,
+                        r.low,
+                        r.close,
+                        r.adj_close,
+                        int(r.volume),
+                    ),
+                )
                 rows_upserted += 1
     conn.commit()
 
